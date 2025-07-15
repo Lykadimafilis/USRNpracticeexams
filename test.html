@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Go go go, USRN!</title>
+  <style>
+    /* General resets and fonts */
+    body, html {
+      margin: 0; padding: 0; height: 100%;
+      font-family: 'Arial', sans-serif;
+      overflow: hidden;
+    }
+
+    /* Container for the entire app */
+    .app-container {
+      height: 100vh;
+      width: 100vw;
+      position: relative;
+      background: url('https://images2.alphacoders.com/522/thumb-1920-522259.jpg') no-repeat center center fixed;
+      background-size: cover;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: #2f1a05;
+      text-shadow: 1px 1px 3px #fff8c7;
+    }
+
+    /* Common box styling for pages */
+    .page {
+      background: rgba(255 255 255 / 0.85);
+      border-radius: 15px;
+      max-width: 700px;
+      width: 90vw;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 25px 30px;
+      box-shadow: 0 8px 15px rgba(0,0,0,0.25);
+      display: none;
+      flex-direction: column;
+    }
+
+    .page.active {
+      display: flex;
+    }
+
+    h1, h2 {
+      margin-bottom: 15px;
+      font-family: 'Georgia', serif;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    /* Editable text areas for customizable text */
+    .editable-text {
+      width: 100%;
+      min-height: 80px;
+      border: 2px solid #d1c088;
+      border-radius: 8px;
+      padding: 10px 15px;
+      font-size: 1.1em;
+      font-family: 'Georgia', serif;
+      resize: vertical;
+      background-color: #fff9db;
+      color: #4a381a;
+      outline: none;
+      margin-bottom: 25px;
+    }
+
+    /* Question styling */
+    #question-number {
+      font-weight: 600;
+      margin-bottom: 8px;
+      font-size: 1.15em;
+    }
+
+    #question-text {
+      font-size: 1.3em;
+      margin-bottom: 20px;
+    }
+
+    #choices button {
+      display: block;
+      margin: 8px 0;
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #cfa53b;
+      background: #ffe880;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 1.1em;
+      font-weight: 600;
+      color: #5a3e01;
+      transition: background-color 0.3s ease;
+      text-align: left;
+    }
+    #choices button:hover {
+      background: #f5df5d;
+    }
+    #choices button:disabled {
+      background: #d8d8d8;
+      cursor: not-allowed;
+      color: #888;
+      border-color: #aaa;
+    }
+
+    /* Controls buttons */
+    .controls {
+      margin-top: 20px;
+      text-align: center;
+    }
+    .controls button {
+      padding: 12px 22px;
+      margin: 5px 10px;
+      border: none;
+      background: #cfa53b;
+      color: #3e2f00;
+      font-weight: 700;
+      border-radius: 10px;
+      cursor: pointer;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+      transition: background-color 0.25s ease;
+    }
+    .controls button:hover {
+      background: #a8840a;
+    }
+
+    /* Timer */
+    #timer {
+      margin-top: 12px;
+      font-weight: 700;
+      font-size: 1.1em;
+      text-align: center;
+      color: #4a381a;
+      user-select: none;
+    }
+
+    #timer-bar-container {
+      margin: 8px auto 0 auto;
+      width: 100%;
+      height: 18px;
+      background-color: #f0d88f;
+      border-radius: 15px;
+      overflow: hidden;
+      box-shadow: inset 0 0 5px rgba(0,0,0,0.1);
+    }
+
+    #timer-bar {
+      height: 100%;
+      width: 100%;
+      background-color: #4caf50;
+      transition: width 1s linear, background-color 0.5s ease;
+    }
+
+    /* Result text */
+    #score {
+      font-size: 1.4em;
+      font-weight: 700;
+      text-align: center;
+      color: #624500;
+      margin-top: 20px;
+    }
+
+    /* Scrollbar style for editable */
+    .editable-text::-webkit-scrollbar {
+      width: 8px;
+    }
+    .editable-text::-webkit-scrollbar-thumb {
+      background: #cfa53b;
+      border-radius: 4px;
+    }
+
+    /* Rationale text */
+    #rationale {
+      margin-top: 12px;
+      font-style: italic;
+      color: #4a381a;
+      font-size: 1em;
+      text-align: center;
+      min-height: 40px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Page 1: Welcome page -->
+    <div id="page-welcome" class="page active">
+      <h1>EXAM</h1>
+      <div contenteditable="true" id="welcome-text" class="editable-text" spellcheck="false" aria-label="Welcome Text">
+        I just want you to know how incredibly proud I am of you. Watching you work so hard and dedicate yourself to this journey has been nothing short of inspiring. The NCLEX is just one more step toward the amazing nurse you’re destined to be—and I believe in you with all my heart. Please read the instructions carefully. You have 60 seconds for each question. The timer bar will turn red when time is running out. Good luck!
+      </div>
+      <div class="controls" style="justify-content:center;">
+        <button id="start-btn">Start Exam</button>
+      </div>
+    </div>
+
+    <!-- Page 2: Exam page -->
+    <div id="page-exam" class="page" style="background: rgba(255 255 255 / 0.85);">
+      <div id="question-number"></div>
+      <div id="question-text"></div>
+      <div id="choices"></div>
+      <div id="rationale"></div>
+
+      <div id="timer">
+        Time Left: <span id="time">60</span> seconds
+      </div>
+      <div id="timer-bar-container">
+        <div id="timer-bar"></div>
+      </div>
+
+      <div class="controls">
+        <button onclick="prevQuestion()" id="prev-btn">Previous</button>
+        <button onclick="nextQuestion()" id="next-btn">Next</button>
+        <button onclick="goToPreResult()" id="submit-btn">Submit</button>
+      </div>
+    </div>
+
+    <!-- Page 3: Pre-result customizable text -->
+    <div id="page-preresult" class="page">
+      <h2>Almost Done!</h2>
+      <div contenteditable="true" id="preresult-text" class="editable-text" spellcheck="false" aria-label="Pre-Result Custom Text">
+        Please review your answers carefully before submitting the exam for scoring, I love you!
+      </div>
+      <div class="controls" style="justify-content:center;">
+        <button id="confirm-submit-btn">Submit Exam & See Results</button>
+        <button id="back-to-exam-btn">Back to Exam</button>
+      </div>
+    </div>
+
+    <!-- Page 4: Result page -->
+    <div id="page-result" class="page">
+      <h2>Exam Completed!</h2>
+      <p id="score"></p>
+      <div class="controls" style="justify-content:center;">
+        <button id="restart-btn">Restart Exam</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Questions array with rationale added
+    const questions = [
+      { question: "A nurse notices a client with a chest tube has continuous bubbling in the water seal chamber. What should the nurse do first?", choices: ["Clamp the tube", "Notify the provider", "Check for air leaks", "Increase suction"], answer: 2, rationale: "Continuous bubbling may indicate an air leak; first check for leaks before taking other actions." },
+      { question: "Which food should a client taking MAOIs avoid?", choices: ["Yogurt", "Banana", "Grapes", "Cheddar cheese"], answer: 3, rationale: "Cheddar cheese contains tyramine which can cause hypertensive crisis with MAOIs." },
+      { question: "A postpartum client saturates a peripad in 15 minutes. What is the priority action?", choices: ["Massage the fundus", "Call the provider", "Start oxygen", "Administer pain meds"], answer: 0, rationale: "Massage the fundus to control bleeding from uterine atony." },
+      { question: "Which client should the nurse see first?", choices: ["Client with COPD and O2 sat 90%", "Client with chest pain rated 8/10", "Client with nausea", "Client scheduled for discharge"], answer: 1, rationale: "Chest pain rated 8/10 is the highest priority due to potential cardiac issues." },
+      { question: "What is the best position for a client during a lumbar puncture?", choices: ["Supine", "Side-lying with knees to chest", "Prone", "High Fowler’s"], answer: 1, rationale: "Side-lying with knees to chest flexes the spine for better access." },
+      { question: "Which finding indicates digoxin toxicity?", choices: ["Constipation", "Bradycardia", "Increased appetite", "Dry mouth"], answer: 1, rationale: "Bradycardia is a common sign of digoxin toxicity." },
+      { question: "Which PPE is required for airborne precautions?", choices: ["Gown and gloves", "N95 respirator", "Face shield", "Surgical mask"], answer: 1, rationale: "N95 respirator protects against airborne pathogens." },
+      { question: "A client receiving TPN has a new temperature of 38.9°C. What is the nurse’s first action?", choices: ["Stop the TPN", "Notify the provider", "Assess catheter site", "Give acetaminophen"], answer: 2, rationale: "Assess catheter site for infection, as TPN is a risk factor." },
+      { question: "Which lab should be monitored for a client on heparin?", choices: ["INR", "PT", "aPTT", "Platelets only"], answer: 2, rationale: "aPTT is used to monitor heparin therapy effectiveness." },
+      { question: "A nurse is delegating to an AP. Which task is appropriate?", choices: ["Administering oral meds", "Ambulating a stable client", "Changing a PICC line dressing", "Assessing pain"], answer: 1, rationale: "Ambulating a stable client is appropriate for an AP." },
+      { question: "Priority teaching for a client starting furosemide:", choices: ["Avoid grapefruit", "Increase potassium intake", "Limit fluids", "Take at bedtime"], answer: 1 },
+	  { question: "A client with a head injury has a fixed and dilated pupil. What does this indicate?", choices: ["Normal finding", "Increased ICP", "Improved condition", "Dehydration"], answer: 1 },
+      { question: "A diabetic client has a blood glucose of 45 mg/dL. What is the first action?", choices: ["Give insulin", "Administer IV glucose", "Call provider", "Recheck glucose"], answer: 1 },
+      { question: "Which statement by a client taking warfarin shows understanding?", choices: ["I'll eat more green leafy vegetables", "I'll use an electric razor", "I'll double the dose if I miss one", "I can take aspirin daily"], answer: 1 },
+      { question: "A client is receiving vancomycin. What adverse effect should the nurse monitor for?", choices: ["Red man syndrome", "Hypoglycemia", "Hypertension", "Constipation"], answer: 0 },
+      { question: "Which food is highest in iron?", choices: ["Milk", "Chicken breast", "Spinach", "Applesauce"], answer: 2 },
+      { question: "Which action reduces risk for VAP in a ventilated client?", choices: ["Limit oral care", "Elevate HOB 30–45°", "Increase sedation", "Suction hourly"], answer: 1 },
+      { question: "A toddler swallows bleach. What is the nurse’s first action?", choices: ["Induce vomiting", "Give water or milk", "Call poison control", "Give activated charcoal"], answer: 2 },
+      { question: "What lab should be checked before giving enoxaparin?", choices: ["Platelet count", "Creatinine", "PT", "INR"], answer: 0 },
+      { question: "Best indicator of fluid volume deficit:", choices: ["Weight loss", "BP change", "Dry mouth", "Urine color"], answer: 0 },
+      { question: "What is a priority for a client on seizure precautions?", choices: ["Keep suction at bedside", "Pad bed rails", "Restrict fluids", "Turn client every 2 hrs"], answer: 1 },
+      { question: "A client has an order for 2 units PRBCs. Which check is most important?", choices: ["Date of donation", "Client’s allergies", "Client identifiers and blood type", "IV site gauge"], answer: 2 },
+      { question: "Client with hypocalcemia may show which sign?", choices: ["Chvostek’s sign", "Bradycardia", "Hypotension", "Increased urine output"], answer: 0 },
+	  { question: "What is the antidote for acetaminophen overdose?", choices: ["Vitamin K", "N-acetylcysteine", "Protamine sulfate", "Naloxone"], answer: 1 },
+	  { question: "Which vaccine is safe in pregnancy?", choices: ["MMR", "Varicella", "Tdap", "HPV"], answer: 2 },
+	  { question: "A nurse receives a needle stick injury. What should she do first?", choices: ["Notify supervisor", "Wash area with soap and water", "Go to employee health", "File an incident report"], answer: 1 },
+	  { question: "Which teaching is important for a client on prednisone?", choices: ["Stop abruptly when better", "Monitor for infection", "Take on empty stomach", "Increase potassium intake"], answer: 1 },
+	  { question: "Which food should be avoided when taking lithium?", choices: ["High sodium foods", "High calcium foods", "High fat foods", "High protein foods"], answer: 0 },
+	  { question: "What should the nurse do first after discovering a fire?", choices: ["Rescue patients", "Call code red", "Extinguish fire", "Close doors and windows"], answer: 0 },
+	  { question: "What electrolyte imbalance is common with chronic kidney disease?", choices: ["Hyperkalemia", "Hypocalcemia", "Hypernatremia", "Hypophosphatemia"], answer: 0 },
+	  { question: "A client with a new ileostomy asks about diet. What should the nurse recommend?", choices: ["High fiber foods", "Low residue diet", "Increase dairy", "More citrus fruits"], answer: 1 },
+	  { question: "Which position helps reduce risk of aspiration in tube feeding?", choices: ["Supine", "Semi-Fowler’s", "Trendelenburg", "Left lateral"], answer: 1 },
+	  { question: "When is Rhogam given?", choices: ["To all Rh+ mothers", "To Rh– mothers after birth of Rh+ infant", "To Rh– mothers only if baby is Rh–", "Before every pregnancy"], answer: 1 },
+	  { question: "What is a late sign of hypoxia?", choices: ["Tachycardia", "Cyanosis", "Restlessness", "Hypertension"], answer: 1 },
+	  { question: "A client reports ringing in the ears while on furosemide. What should the nurse do?", choices: ["Continue the med", "Stop infusion and notify provider", "Reduce fluid intake", "Increase potassium"], answer: 1 },
+	  { question: "Which statement shows understanding of nitroglycerin use?", choices: ["Store in bathroom", "Take with meals", "Use up to 3 tablets, 5 min apart", "Stop if headache occurs"], answer: 2 },
+	  { question: "A client with TB can stop isolation after:", choices: ["Negative chest x-ray", "3 negative sputum cultures", "No symptoms", "One week of meds"], answer: 1 },
+	  { question: "A nurse floats to the ICU. Which client is most appropriate?", choices: ["Post-cardiac arrest", "Stable post-op CABG", "Client on high-dose pressors", "Acute GI bleed on transfusion"], answer: 1 },
+	  { question: "What is the best indicator of kidney function?", choices: ["BUN", "Creatinine", "Urine output", "Specific gravity"], answer: 1 },
+	  { question: "Client with pancreatitis should be NPO because:", choices: ["Prevent aspiration", "Reduce pancreatic stimulation", "Lower gastric acid", "Increase healing"], answer: 1 },
+	  { question: "Which finding in a newborn should be reported immediately?", choices: ["Acrocyanosis", "Jitteriness", "Positive Babinski", "Rooting reflex"], answer: 1 },
+	  { question: "A pregnant client has a BP of 160/100 and proteinuria. What does this suggest?", choices: ["Hyperemesis", "Preeclampsia", "Placenta previa", "Abruptio placenta"], answer: 1 },
+	  { question: "Which sign indicates magnesium toxicity?", choices: ["Hyperreflexia", "Respiratory depression", "Increased urine output", "Seizures"], answer: 1 },
+	  { question: "Which intervention is priority for a client in restraints?", choices: ["Offer fluids every 8 hrs", "Remove restraints q2h", "Document every 24 hrs", "Check skin once a shift"], answer: 1 },
+	  { question: "Which lab value indicates effective warfarin therapy?", choices: ["INR 2–3", "PT 8 sec", "aPTT 25 sec", "INR 1.0"], answer: 0 },
+	  { question: "When teaching crutch walking, the elbows should be:", choices: ["Locked straight", "Flexed about 30°", "Fully bent", "Held above shoulder"], answer: 1 },
+	  { question: "What is the first sign of hypoglycemia?", choices: ["Polyuria", "Sweating", "Bradycardia", "Dry mouth"], answer: 1 },
+	  { question: "Priority action for a client with chest pain in ED:", choices: ["Start IV", "Apply oxygen", "Get ECG", "Call cardiology"], answer: 1 },
+	  { question: "Which action prevents DVT in immobile clients?", choices: ["Massage calves", "Apply SCDs", "Place pillows under knees", "Encourage bed rest"], answer: 1 },
+	  { question: "Client with neutropenia should avoid:", choices: ["Fresh fruits & veggies", "Cooked eggs", "Bottled water", "Canned soup"], answer: 0 },
+	  { question: "What should be monitored after thyroidectomy?", choices: ["Hypoglycemia", "Bleeding and airway", "Hyperkalemia", "Urinary output"], answer: 1 },
+	  { question: "Best time to take statins:", choices: ["Morning", "With lunch", "At bedtime", "Before exercise"], answer: 2 },
+	  { question: "A client develops wheezing after IV antibiotics. First action?", choices: ["Stop infusion", "Give epinephrine", "Call provider", "Assess BP"], answer: 0 },
+	  { question: "A newborn has a heart rate of 90 bpm after birth. First action?", choices: ["Dry and stimulate", "Start compressions", "Give O2", "Call code"], answer: 1 },
+	  { question: "What is priority teaching for a client with GERD?", choices: ["Eat large meals", "Lie flat after meals", "Avoid caffeine & spicy food", "Drink lots of fluids during meals"], answer: 2 },
+	  { question: "What sign is associated with appendicitis?", choices: ["Murphy's sign", "Rovsing's sign", "Chvostek's sign", "Kernig's sign"], answer: 1 },
+	  { question: "Which finding suggests fluid overload?", choices: ["Dry mucous membranes", "Crackles in lungs", "Increased Hct", "Tachycardia"], answer: 1 },
+	  { question: "A client on chemotherapy has mouth sores. Best intervention?", choices: ["Use lemon-glycerin swabs", "Brush with firm bristles", "Rinse with saline", "Avoid oral care"], answer: 2 },
+	  { question: "A client taking ACE inhibitors should report:", choices: ["Dry cough", "Constipation", "Blurred vision", "Muscle cramps"], answer: 0 },
+	  { question: "Best site for IM injection in an adult:", choices: ["Dorsogluteal", "Deltoid", "Ventrogluteal", "Vastus lateralis"], answer: 2 },
+	  { question: "Priority for a client after bone marrow biopsy:", choices: ["Keep site elevated", "Apply firm pressure", "Ice pack", "Encourage ambulation"], answer: 1 },
+	  { question: "Which lab is monitored for statin therapy?", choices: ["Renal function", "Liver enzymes", "Calcium", "Potassium"], answer: 1 },
+	  { question: "Which statement shows understanding of albuterol inhaler?", choices: ["I use it daily", "I rinse mouth after use", "I shake it before use", "I store it in fridge"], answer: 2 },
+	  { question: "What is a common side effect of opioids?", choices: ["Diarrhea", "Constipation", "Polyuria", "Hypertension"], answer: 1 },
+	  { question: "Which precaution is needed for C. difficile?", choices: ["Airborne", "Contact", "Droplet", "Reverse isolation"], answer: 1 },
+	  { question: "Client has BP 88/58 after surgery. First action?", choices: ["Increase IV fluids", "Call provider", "Reassess in 30 min", "Give antihypertensive"], answer: 0 },
+	  { question: "Which finding requires immediate attention after tonsillectomy?", choices: ["Drooling", "Mild throat pain", "Small clots", "Mild fever"], answer: 0 },
+	  { question: "Which is a long‑acting insulin?", choices: ["Lispro", "NPH", "Detemir", "Regular"], answer: 2 },
+	  { question: "What is a serious adverse effect of clozapine?", choices: ["Agranulocytosis", "Tachycardia", "Dry mouth", "Constipation"], answer: 0 },
+	  { question: "Client reports sharp chest pain on inspiration after surgery. Possible cause?", choices: ["Myocardial infarction", "Pneumonia", "Pulmonary embolism", "Pericarditis"], answer: 2 },
+	  { question: "Which client is at highest risk for UTI?", choices: ["Postmenopausal woman", "Pregnant woman", "Adolescent male", "Elderly male"], answer: 1 },
+	  { question: "What should the nurse do before blood transfusion?", choices: ["Warm the blood", "Prime tubing with D5W", "Check client identifiers", "Give diuretic"], answer: 2 },
+	  { question: "Client taking spironolactone should avoid:", choices: ["Oranges", "Bananas", "Apples", "Grapes"], answer: 1 },
+	  { question: "Best diet for a client with hypertension:", choices: ["High sodium", "Low sodium", "High protein", "Low carb"], answer: 1 },
+	  { question: "Which is an early sign of hypokalemia?", choices: ["Muscle weakness", "Bradycardia", "Seizures", "Confusion"], answer: 0 },
+	  { question: "Which finding in a newborn is abnormal?", choices: ["Lanugo", "Jaundice in first 24 hrs", "Milia", "Molding"], answer: 1 },
+	  { question: "What should the nurse do if an IV infiltrates?", choices: ["Flush with NS", "Elevate and apply warm compress", "Increase rate", "Leave catheter in place"], answer: 1 },
+	  { question: "Which client can be assigned to an LPN?", choices: ["New diabetic with DKA", "Stable post-op day 2", "Chest pain in ED", "Confused elderly patient"], answer: 1 },
+	  { question: "Which statement shows understanding of EpiPen use?", choices: ["Inject into thigh", "Keep in bathroom", "Inject into arm", "Use if dizzy"], answer: 0 },
+	  { question: "What is a sign of left-sided heart failure?", choices: ["Peripheral edema", "JVD", "Pulmonary crackles", "Ascites"], answer: 2 },
+	  { question: "Best indicator of pain relief after opioid:", choices: ["Pulse rate", "BP", "Pain scale", "Facial expression"], answer: 2 },
+	  { question: "A client with hypothyroidism should avoid:", choices: ["Iodized salt", "Soy products", "Dairy products", "Whole grains"], answer: 1 },
+	  { question: "Which vitamin enhances absorption of iron?", choices: ["Vitamin D", "Vitamin K", "Vitamin C", "Vitamin B12"], answer: 2 },
+	  { question: "Which action prevents pneumonia in older adults?", choices: ["Antibiotics daily", "Flu vaccine yearly", "Increase sodium intake", "Restrict fluids"], answer: 1 },
+	  { question: "A nurse is caring for a client with SIADH. Which lab finding is expected?", choices: ["Hypernatremia", "Hyponatremia", "Hyperkalemia", "Hyperglycemia"], answer: 1 },
+	  { question: "Which finding requires immediate follow-up in a client with a chest tube?", choices: ["Drainage of 50 mL in 2 hrs", "Clamping during ambulation", "Sudden cessation of drainage", "Bubbling in suction chamber"], answer: 2 },
+	  { question: "Which action should the nurse delegate to an AP?", choices: ["Evaluate pain relief", "Assist with bathing", "Teach coughing exercises", "Assess skin integrity"], answer: 1 },
+	  { question: "A client taking isoniazid should be taught to report:", choices: ["Yellowing of skin", "Dry mouth", "Increased appetite", "Blurred vision"], answer: 0 },
+	  { question: "Client with hypoglycemia becomes unconscious. What is priority action?", choices: ["Give orange juice", "Call provider", "Administer IM glucagon", "Place in Trendelenburg"], answer: 2 },
+	  { question: "Which finding indicates need for suctioning a tracheostomy?", choices: ["Clear lung sounds", "Low SpO₂", "Dry mucous membranes", "Productive cough"], answer: 1 },
+	  { question: "Priority teaching for a client on phenytoin:", choices: ["Take on empty stomach", "Use soft toothbrush", "Stop if rash develops", "Increase potassium intake"], answer: 1 },
+	  { question: "Client with nephrotic syndrome should have which diet?", choices: ["High sodium", "High protein", "Low calorie", "High potassium"], answer: 1 },
+	  { question: "Best time to administer proton pump inhibitors (PPIs):", choices: ["After meals", "Before breakfast", "At bedtime", "With antacids"], answer: 1 },
+	  { question: "Which assessment indicates fluid volume overload?", choices: ["Dry skin", "Bounding pulses", "Increased hematocrit", "Orthostatic hypotension"], answer: 1 },
+	  { question: "What is the priority after umbilical cord prolapse?", choices: ["Apply fetal monitor", "Notify provider", "Place client in knee-chest position", "Give oxygen"], answer: 2 },
+	  { question: "Which adverse effect is common with SSRIs?", choices: ["Urinary retention", "Weight loss", "Sexual dysfunction", "Blurred vision"], answer: 2 },
+	  { question: "Which intervention prevents skin breakdown in a bedridden client?", choices: ["Keep bed flat", "Massage bony areas", "Reposition every 2 hrs", "Restrict fluids"], answer: 2 },
+	  { question: "A client with renal failure asks about fluid restriction. Best response:", choices: ["You may drink freely", "Limit to 3L/day", "Limit fluids as prescribed", "Drink only in the morning"], answer: 2 },
+	  { question: "Which client should be seen first?", choices: ["Stable angina and mild pain", "Asthma with mild wheeze", "Pneumonia with RR 32/min", "Hip fracture waiting for X-ray"], answer: 2 },
+	  { question: "Priority teaching for a client taking alendronate for osteoporosis:", choices: ["Take at bedtime", "Take with juice", "Remain upright 30 min after", "Limit calcium intake"], answer: 2 },
+    ];
+
+    let currentQuestion = 0;
+    let score = 0;
+    let timer;
+    let timeLeft;
+    const totalTime = 60;
+
+    // Cache elements
+    const pageWelcome = document.getElementById('page-welcome');
+    const pageExam = document.getElementById('page-exam');
+    const pagePreResult = document.getElementById('page-preresult');
+    const pageResult = document.getElementById('page-result');
+
+    const questionNumberEl = document.getElementById('question-number');
+    const questionTextEl = document.getElementById('question-text');
+    const choicesEl = document.getElementById('choices');
+    const rationaleEl = document.getElementById('rationale');
+    const timeEl = document.getElementById('time');
+    const timerBar = document.getElementById('timer-bar');
+
+    const startBtn = document.getElementById('start-btn');
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    const submitBtn = document.getElementById('submit-btn');
+
+    const confirmSubmitBtn = document.getElementById('confirm-submit-btn');
+    const backToExamBtn = document.getElementById('back-to-exam-btn');
+
+    const scoreEl = document.getElementById('score');
+
+    // User answers storage
+    let userAnswers = new Array(questions.length).fill(null);
+
+    // Show page helper
+    function showPage(page) {
+      [pageWelcome, pageExam, pagePreResult, pageResult].forEach(p => p.classList.remove('active'));
+      page.classList.add('active');
+    }
+
+    // Load question
+    function loadQuestion() {
+      resetTimer();
+      const q = questions[currentQuestion];
+      questionNumberEl.textContent = `Question ${currentQuestion + 1} of ${questions.length}`;
+      questionTextEl.textContent = q.question;
+
+      // Clear previous choices and rationale
+      choicesEl.innerHTML = '';
+      rationaleEl.textContent = '';
+
+      q.choices.forEach((choice, index) => {
+        const btn = document.createElement('button');
+        btn.textContent = choice;
+        btn.disabled = false;
+
+        if (userAnswers[currentQuestion] !== null) {
+          btn.disabled = true;
+
+          if (userAnswers[currentQuestion] === index) {
+            // Highlight user's answer: green if correct, red if wrong
+            btn.style.backgroundColor = userAnswers[currentQuestion] === q.answer ? '#8bc34a' : '#f44336';
+            btn.style.color = '#fff';
+          }
+
+          if (index === q.answer && userAnswers[currentQuestion] !== q.answer) {
+            // Highlight correct answer with border if user was wrong
+            btn.style.border = '2px solid #4caf50';
+          }
+        }
+
+        btn.onclick = () => {
+          if (userAnswers[currentQuestion] === null) {
+            userAnswers[currentQuestion] = index;
+            if (index === q.answer) {
+              score++;
+            }
+
+            // Show rationale immediately
+            rationaleEl.textContent = `✅ Correct answer: ${q.choices[q.answer]} — ${q.rationale}`;
+
+            // Disable all buttons and style them
+            const buttons = choicesEl.querySelectorAll('button');
+            buttons.forEach((b, btnIndex) => {
+              b.disabled = true;
+              if (btnIndex === index) {
+                b.style.backgroundColor = index === q.answer ? '#8bc34a' : '#f44336'; // green or red
+                b.style.color = '#fff';
+              }
+              if (btnIndex === q.answer && index !== q.answer) {
+                b.style.border = '2px solid #4caf50';
+              }
+            });
+
+            // Enable next button
+            nextBtn.disabled = false;
+          }
+        };
+
+        choicesEl.appendChild(btn);
+      });
+
+      // Disable prev button on first question
+      prevBtn.disabled = currentQuestion === 0;
+
+      // Disable next if not yet answered
+      nextBtn.disabled = userAnswers[currentQuestion] === null;
+
+      submitBtn.disabled = false;
+
+      startTimer();
+    }
+
+    // Timer functions
+    function startTimer() {
+      timeLeft = totalTime;
+      updateTimerDisplay();
+      timer = setInterval(() => {
+        timeLeft--;
+        updateTimerDisplay();
+        if (timeLeft <= 0) {
+          clearInterval(timer);
+          autoNext();
+        }
+      }, 1000);
+    }
+
+    function resetTimer() {
+      clearInterval(timer);
+      timerBar.style.width = '100%';
+      timerBar.style.backgroundColor = '#4caf50';
+    }
+
+    function updateTimerDisplay() {
+      timeEl.textContent = timeLeft;
+      const percent = (timeLeft / totalTime) * 100;
+      timerBar.style.width = percent + '%';
+      if (timeLeft <= 10) {
+        timerBar.style.backgroundColor = '#dc3545'; // red when <10s
+      } else {
+        timerBar.style.backgroundColor = '#4caf50'; // green
+      }
+    }
+
+    // Auto advance when time runs out (mark unanswered as incorrect)
+    function autoNext() {
+      if (userAnswers[currentQuestion] === null) {
+        userAnswers[currentQuestion] = -1; // no answer
+      }
+      currentQuestion++;
+      if (currentQuestion < questions.length) {
+        loadQuestion();
+      } else {
+        goToPreResult();
+      }
+    }
+
+    // Navigation buttons
+    function nextQuestion() {
+      if (userAnswers[currentQuestion] !== null) {
+        currentQuestion++;
+        if (currentQuestion < questions.length) {
+          loadQuestion();
+        } else {
+          goToPreResult();
+        }
+      }
+    }
+
+    function prevQuestion() {
+      if (currentQuestion > 0) {
+        currentQuestion--;
+        loadQuestion();
+      }
+    }
+
+    // Go to pre-result page
+    function goToPreResult() {
+      clearInterval(timer);
+      showPage(pagePreResult);
+    }
+
+    // Confirm submit
+    function submitQuiz() {
+      clearInterval(timer);
+      calculateScore();
+      showPage(pageResult);
+    }
+
+    // Calculate score by checking userAnswers against correct answers
+    function calculateScore() {
+      score = 0;
+      for(let i=0; i<questions.length; i++) {
+        if(userAnswers[i] === questions[i].answer) {
+          score++;
+        }
+      }
+      scoreEl.textContent = `Your Score: ${score} out of ${questions.length}`;
+    }
+
+    // Restart exam
+    function restartExam() {
+      currentQuestion = 0;
+      score = 0;
+      userAnswers = new Array(questions.length).fill(null);
+      showPage(pageWelcome);
+    }
+
+    // Event listeners
+    startBtn.addEventListener('click', () => {
+      showPage(pageExam);
+      loadQuestion();
+    });
+
+    prevBtn.addEventListener('click', prevQuestion);
+    nextBtn.addEventListener('click', nextQuestion);
+    submitBtn.addEventListener('click', goToPreResult);
+
+    confirmSubmitBtn.addEventListener('click', submitQuiz);
+    backToExamBtn.addEventListener('click', () => {
+      showPage(pageExam);
+      loadQuestion();
+    });
+
+    document.getElementById('restart-btn').addEventListener('click', restartExam);
+
+  </script>
+</body>
+</html>
